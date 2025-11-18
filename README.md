@@ -9,12 +9,18 @@ services locally:
 - **snapfs-gateway** – HTTP/JSON + WebSocket API
 - **snapfs-agent-mysql** – consumes file events and writes to MySQL
 
-All images are pulled from `ghcr.io/snapfsio/...`.
+All images are pulled from `ghcr.io/snapfsio/`
 
 ## Requirements
 
 - Docker
 - Docker Compose (`docker compose` CLI)
+
+## Quick start
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/snapfsio/snapfs-stack/master/install.sh | sh
+```
 
 ## Usage
 
