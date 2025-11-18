@@ -1,0 +1,74 @@
+services:
+  nats:
+    image: nats:2.10
+    command: ["-js", "-sd", "/var/lib/nats"]
+    container_name: snapfs-nats
+    ports:
+      - "4222:4222"   # NATS client
+      - "8222:8222"   # NATS monitoring
+    volumes:
+      - nats_data:/var/lib/nats
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: snapfs-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    container_name: snapfs-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: snapfs
+      MYSQL_USER: snapfs
+      MYSQL_PASSWORD: snapfs
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+
+  gateway:
+    image: ghcr.io/snapfsio/snapfs-gateway:${GATEWAY_TAG:-0.1.2}
+    container_name: snapfs-gateway
+    depends_on:
+      - nats
+      - redis
+      - mysql
+    environment:
+      SNAPFS_ENV: "dev"
+      NATS_URL: "nats://nats:4222"
+      REDIS_URL: "redis://redis:6379/0"
+      SNAPFS_STREAM: "SNAPFS_FILES"
+      SNAPFS_SUBJECT: "snapfs.files"
+      # For future /query/sql or other direct DB usage, if/when you wire it:
+      MYSQL_URL: "mysql+pymysql://snapfs:snapfs@mysql:3306/snapfs"
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  agent-mysql:
+    image: ghcr.io/snapfsio/snapfs-agent-mysql:${MYSQL_AGENT_TAG:-0.1.3}
+    container_name: snapfs-agent-mysql
+    depends_on:
+      - gateway
+      - mysql
+      - nats
+    environment:
+      GATEWAY_WS: "ws://gateway:8000"
+      MYSQL_URL: "mysql+aiomysql://snapfs:snapfs@mysql:3306/snapfs"
+      SNAPFS_SUBJECT: "snapfs.files"
+      SNAPFS_DURABLE: "mysql"
+      SNAPFS_BATCH: "100"
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  redis_data:
+  nats_data:
