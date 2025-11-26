@@ -33,14 +33,23 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-prootpass"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   gateway:
     image: ghcr.io/snapfsio/snapfs-gateway:${GATEWAY_TAG:-latest}
     container_name: snapfs-gateway
     depends_on:
-      - nats
-      - redis
-      - mysql
+      nats:
+        condition: service_started
+      redis:
+        condition: service_started
+      mysql:
+        condition: service_healthy
     environment:
       SNAPFS_ENV: "dev"
       NATS_URL: "nats://nats:4222"
@@ -56,9 +65,12 @@ services:
     image: ghcr.io/snapfsio/snapfs-agent-mysql:${MYSQL_AGENT_TAG:-latest}
     container_name: snapfs-agent-mysql
     depends_on:
-      - gateway
-      - mysql
-      - nats
+      gateway:
+        condition: service_started
+      nats:
+        condition: service_started
+      mysql:
+        condition: service_healthy
     environment:
       GATEWAY_WS: "ws://gateway:8000"
       MYSQL_URL: "mysql+aiomysql://snapfs:snapfs@mysql:3306/snapfs"
