@@ -35,7 +35,7 @@ services:
     restart: unless-stopped
 
   gateway:
-    image: ghcr.io/snapfsio/snapfs-gateway:${GATEWAY_TAG:-0.1.5}
+    image: ghcr.io/snapfsio/snapfs-gateway:${GATEWAY_TAG:-latest}
     container_name: snapfs-gateway
     depends_on:
       - nats
@@ -47,14 +47,13 @@ services:
       REDIS_URL: "redis://redis:6379/0"
       SNAPFS_STREAM: "SNAPFS_FILES"
       SNAPFS_SUBJECT: "snapfs.files"
-      # For future /query/sql or other direct DB usage, if/when you wire it:
       MYSQL_URL: "mysql+pymysql://snapfs:snapfs@mysql:3306/snapfs"
     ports:
       - "8000:8000"
     restart: unless-stopped
 
   agent-mysql:
-    image: ghcr.io/snapfsio/snapfs-agent-mysql:${MYSQL_AGENT_TAG:-0.1.5}
+    image: ghcr.io/snapfsio/snapfs-agent-mysql:${MYSQL_AGENT_TAG:-latest}
     container_name: snapfs-agent-mysql
     depends_on:
       - gateway
