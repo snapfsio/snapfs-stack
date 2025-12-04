@@ -39,6 +39,26 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+  
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: snapfs-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200 > /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    restart: unless-stopped
 
   gateway:
     image: ghcr.io/snapfsio/snapfs-gateway:${GATEWAY_TAG:-latest}
@@ -79,7 +99,30 @@ services:
       SNAPFS_BATCH: "100"
     restart: unless-stopped
 
+  agent-es:
+    image: ghcr.io/snapfsio/snapfs-agent-es:${ES_AGENT_TAG:-latest}
+    container_name: snapfs-agent-es
+    depends_on:
+      gateway:
+        condition: service_started
+      elasticsearch:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    environment:
+      GATEWAY_WS: "ws://gateway:8000"
+      ES_URL: "http://elasticsearch:9200"
+      SNAPFS_SUBJECT: "snapfs.files"
+      SNAPFS_DURABLE: "es"
+      SNAPFS_BATCH: "100"
+      SNAPFS_ES_INDEX_PREFIX: "snapfs-files"
+      SNAPFS_ES_INDEX_MODE: "daily"
+      SNAPFS_ES_ILM_POLICY: "snapfs_1d"
+      SNAPFS_ES_USE_LATEST_ALIAS: "true"
+    restart: unless-stopped
+
 volumes:
   mysql_data:
+  es_data:
   redis_data:
   nats_data:
