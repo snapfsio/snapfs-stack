@@ -1,7 +1,7 @@
 services:
   nats:
     image: nats:2.10
-    command: ["-js", "-sd", "/var/lib/nats"]
+    command: ["-js", "-sd", "/var/lib/nats", "-m", "8222"]
     container_name: snapfs-nats
     ports:
       - "4222:4222"   # NATS client
@@ -96,7 +96,7 @@ services:
       MYSQL_URL: "mysql+aiomysql://snapfs:snapfs@mysql:3306/snapfs"
       SNAPFS_SUBJECT: "snapfs.files"
       SNAPFS_DURABLE: "mysql"
-      SNAPFS_BATCH: "100"
+      SNAPFS_BATCH: "5"
     restart: unless-stopped
 
   agent-es:
