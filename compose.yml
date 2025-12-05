@@ -116,9 +116,9 @@ services:
       SNAPFS_DURABLE: "es"
       SNAPFS_BATCH: "100"
       SNAPFS_ES_INDEX_PREFIX: "snapfs-files"
-      SNAPFS_ES_INDEX_MODE: "daily"
+      SNAPFS_ES_INDEX_MODE: "single"
       SNAPFS_ES_ILM_POLICY: "snapfs_1d"
-      SNAPFS_ES_USE_LATEST_ALIAS: "true"
+      SNAPFS_ES_USE_LATEST_ALIAS: "false"
     restart: unless-stopped
 
 volumes:
